@@ -1,0 +1,27 @@
+{
+	"groups": [
+		{
+			"channels": ["channel_id_1", "channel_id_2"],
+			"keywords": [{
+				"keyword": "example",
+				"reaction": null,
+				"response": "I have responded to seeing the word 'example'."
+			}],
+			"regex": [{
+				"pattern": ".*eximple.*",
+				 "reaction": "👁️",
+				"response": "I have responded to matching the example regex pattern."
+			}],
+			"parsing": {
+				"paste": [{
+					"domain": "pastebin.com",
+					"format": "https://pastebin.com/raw/&filename&"
+				},
+				{
+					"domain": "hastebin.com",
+					"format": "https://hastebin.com/raw/&filename&"
+				}]
+			}
+		}
+	]
+}
