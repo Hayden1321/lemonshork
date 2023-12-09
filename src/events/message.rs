@@ -69,12 +69,10 @@ pub async fn message(handler: &crate::Handler, ctx: Context, msg: serenity::mode
 		
 		let request = reqwest::get(url).await.unwrap();
 
-	  if request.headers().get("Content-Type").expect("Failed to get content type").to_str().unwrap().contains("image/jpeg") || request.headers().get("Content-Type").expect("Failed to get content type").to_str().unwrap().contains("image/png") {
-			let image = image::load_from_memory(&request.bytes().await.unwrap()).unwrap();
-			
+	  if request.headers().get("Content-Type").expect("Failed to get content type").to_str().unwrap().contains("image/jpeg") || request.headers().get("Content-Type").expect("Failed to get content type").to_str().unwrap().contains("image/png") {			
 			let mut tesseract = LepTess::new(Some("./tessdata"), "eng").unwrap();
 		
-			tesseract.set_image_from_mem(image.as_bytes()).expect("Failed to set image from memory");
+			tesseract.set_image_from_mem(&request.bytes().await.unwrap()).expect("Failed to set image from memory");
 
 			let output = tesseract.get_utf8_text().unwrap();
 
