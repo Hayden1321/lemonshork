@@ -1,4 +1,3 @@
-use rusty_tesseract::{Args, Image};
 use serenity::{client::Context, all::ReactionType};
 use regex::Regex;
 use url::Url;
