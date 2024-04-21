@@ -1,4 +1,5 @@
 {
+	"token": "DISCORD_TOKEN_HERE",
 	"groups": [
 		{
 			"channels": ["channel_id_1", "channel_id_2"],

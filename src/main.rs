@@ -1,16 +1,14 @@
 use core::fmt;
-use std::{env, error::Error, fs::File, io::BufReader};
-
 use dotenv;
 use serde::Deserialize;
+use serenity::model::gateway::Ready;
 use serenity::{
     all::GatewayIntents,
     async_trait,
     client::{Context, EventHandler},
     Client,
 };
-
-use serenity::model::gateway::Ready;
+use std::{env, error::Error, fs::File, io::BufReader};
 
 mod events;
 
@@ -39,6 +37,7 @@ impl fmt::Display for DiscordClientError {
 
 #[derive(Deserialize, Debug)]
 pub struct Config {
+    token: String,
     groups: Vec<Group>,
 }
 
@@ -109,13 +108,10 @@ async fn main() -> Result<(), DiscordClientError> {
 
     let intents = GatewayIntents::GUILD_MESSAGES | GatewayIntents::MESSAGE_CONTENT;
 
-    let mut client = Client::builder(
-        &env::var("DISCORD_TOKEN").map_err(|_| DiscordClientError::TokenFailed)?,
-        intents,
-    )
-    .event_handler(handler)
-    .await
-    .map_err(|_| DiscordClientError::ClientError)?;
+    let mut client = Client::builder(cfg.token, intents)
+        .event_handler(handler)
+        .await
+        .map_err(|_| DiscordClientError::ClientError)?;
 
     if let Err(why) = client.start().await {
         println!("Client error: {:?}", why);
