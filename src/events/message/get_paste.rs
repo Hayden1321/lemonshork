@@ -1,9 +1,8 @@
-use url::Url;
-
 use super::MessageError;
 use crate::{Group, Paste};
+use url::Url;
 
-pub async fn handler(group: &Group, url: String) -> Result<(String, Group), MessageError> {
+pub async fn handler(group: &Group, url: &String) -> Result<String, MessageError> {
     let paste_config = *group
         .parsing
         .paste
@@ -51,7 +50,7 @@ pub async fn handler(group: &Group, url: String) -> Result<(String, Group), Mess
             .await
             .map_err(|_| MessageError::HttpRequestError)?;
 
-        return Ok((text, group.clone()));
+        return Ok(text);
     }
 
     Err(MessageError::BadType)

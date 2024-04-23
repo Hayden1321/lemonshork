@@ -1,13 +1,12 @@
-use crate::{Group, Keyword, Paste};
-use leptess::LepTess;
-use regex::Regex;
+use self::parse_content::MessageMatchType;
+use crate::Group;
 use serenity::{all::ReactionType, client::Context};
-use std::{error::Error, fmt, io::Cursor};
-use url::Url;
+use std::{error::Error, fmt};
 
 mod get_content;
 mod get_ocr;
 mod get_paste;
+mod get_result;
 mod parse_content;
 
 #[derive(Debug)]
@@ -15,7 +14,6 @@ pub enum MessageError {
     RegexCaptureError,
     FilterError,
     HttpRequestError,
-    UrlParseError,
     ClientError,
     TesseractError,
     ImageLoadError,
@@ -30,7 +28,6 @@ impl fmt::Display for MessageError {
             MessageError::RegexCaptureError => fmt.write_str("Failed to capture regex"),
             MessageError::FilterError => fmt.write_str("Failed to filter groups"),
             MessageError::HttpRequestError => fmt.write_str("Failed to make HTTP request"),
-            MessageError::UrlParseError => fmt.write_str("Failed to parse URL"),
             MessageError::ClientError => fmt.write_str("Failed to create client"),
             MessageError::TesseractError => fmt.write_str("Failed to read image"),
             MessageError::ImageLoadError => fmt.write_str("Failed to load image"),
@@ -57,17 +54,33 @@ pub async fn message(
         .get(0)
         .ok_or(MessageError::FilterError)?;
 
-    match get_paste::handler(group, url).await {
-        Ok((g, url)) => {
-            parse_content::handler().await; // Make this take http and then reply to the user
-        }
-        Err(MessageError::BadType) => {
-            // IGNORE THIS
-        }
-        Err(_) => {}
-    }
+    let result = get_result::handler(url, msg.content.clone(), group)
+        .await
+        .map_err(|_| MessageError::FilterError)?
+        .ok_or(MessageError::FilterError)?;
 
-    //TODO: Handle OCR & Regular Text
+    match result {
+        MessageMatchType::Keyword(keyword) => {
+            msg.reply(&ctx.http, keyword.response.clone())
+                .await
+                .map_err(|_| MessageError::ClientError)?;
+            msg.react(
+                &ctx.http,
+                ReactionType::Unicode(keyword.reaction.unwrap_or("👀".to_string())),
+            )
+            .await
+            .map_err(|_| MessageError::ClientError)?;
+        }
+        MessageMatchType::Regex(regex) => {
+            msg.reply(&ctx.http, regex.response.clone()).await.unwrap();
+            msg.react(
+                &ctx.http,
+                ReactionType::Unicode(regex.reaction.unwrap_or("👀".to_string())),
+            )
+            .await
+            .map_err(|_| MessageError::ClientError)?;
+        }
+    }
 
     Ok(())
 }

@@ -1,5 +1,4 @@
 use core::fmt;
-use dotenv;
 use serde::Deserialize;
 use serenity::model::gateway::Ready;
 use serenity::{
@@ -8,13 +7,12 @@ use serenity::{
     client::{Context, EventHandler},
     Client,
 };
-use std::{env, error::Error, fs::File, io::BufReader};
+use std::{error::Error, fs::File, io::BufReader};
 
 mod events;
 
 #[derive(Debug)]
 enum DiscordClientError {
-    TokenFailed,
     ClientError,
     ConfigReadFailure,
     ConfigParseFailure,
@@ -26,7 +24,6 @@ impl Error for DiscordClientError {}
 impl fmt::Display for DiscordClientError {
     fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            DiscordClientError::TokenFailed => fmt.write_str("Failed to get token"),
             DiscordClientError::ClientError => fmt.write_str("Failed to create client"),
             DiscordClientError::ConfigReadFailure => fmt.write_str("Failed to read config file"),
             DiscordClientError::ConfigParseFailure => fmt.write_str("Failed to parse config file"),
@@ -97,18 +94,18 @@ impl EventHandler for Handler {
 
 #[tokio::main]
 async fn main() -> Result<(), DiscordClientError> {
-    dotenv::dotenv().map_err(|_| DiscordClientError::EnvError)?;
-
     let file = File::open("./config.json").map_err(|_| DiscordClientError::ConfigReadFailure)?;
     let reader = BufReader::new(file);
     let cfg: Config =
         serde_json::from_reader(reader).map_err(|_| DiscordClientError::ConfigParseFailure)?;
 
+    let token = cfg.token.clone();
+
     let handler = Handler { cfg };
 
     let intents = GatewayIntents::GUILD_MESSAGES | GatewayIntents::MESSAGE_CONTENT;
 
-    let mut client = Client::builder(cfg.token, intents)
+    let mut client = Client::builder(token, intents)
         .event_handler(handler)
         .await
         .map_err(|_| DiscordClientError::ClientError)?;

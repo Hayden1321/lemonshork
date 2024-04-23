@@ -2,11 +2,6 @@ use super::MessageError;
 use crate::{Group, Keyword};
 use regex::Regex;
 
-pub enum MessageMatchType {
-    Keyword(Keyword),
-    Regex(crate::Regex),
-}
-
 pub async fn handler(
     content: String,
     group: &Group,

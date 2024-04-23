@@ -1,7 +1,6 @@
+use super::MessageError;
 use regex::Regex;
 use serenity::model::channel::Message;
-
-use super::MessageError;
 
 pub async fn handler(msg: Message) -> Result<String, MessageError> {
     if msg.attachments.len() > 0 {
