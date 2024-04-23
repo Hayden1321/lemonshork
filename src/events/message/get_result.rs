@@ -14,12 +14,10 @@ pub async fn handler(
         Some(url) => {
             match get_paste::handler(group, &url).await {
                 Ok(output) => {
-                    match parse_content::handler(output.to_lowercase(), group)
-                        .await
-                        .map_err(|_| MessageError::RegexCaptureError)?
-                    {
-                        Some(r) => return Ok(Some(r)),
-                        None => {}
+                    match parse_content::handler(output.to_lowercase(), group).await {
+                        Ok(Some(r)) => return Ok(Some(r)),
+                        Ok(None) => {}
+                        Err(_) => {}
                     };
                 }
                 Err(MessageError::BadType) => {}
@@ -36,6 +34,7 @@ pub async fn handler(
                         None => {}
                     };
                 }
+                Err(MessageError::BadType) => {}
                 Err(_) => return Err(MessageError::TesseractError),
             }
 
