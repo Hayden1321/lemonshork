@@ -1,4 +1,5 @@
 use core::fmt;
+use error_stack::{Result, ResultExt};
 use serde::Deserialize;
 use serenity::model::gateway::Ready;
 use serenity::{
@@ -7,30 +8,20 @@ use serenity::{
     client::{Context, EventHandler},
     Client,
 };
-use std::{error::Error, fs::File, io::BufReader};
+use std::{fs::File, io::BufReader};
 
 mod events;
 
 #[derive(Debug)]
-enum DiscordClientError {
-    ClientError,
-    ConfigReadFailure,
-    ConfigParseFailure,
-    EnvError,
-}
-
-impl Error for DiscordClientError {}
+struct DiscordClientError;
 
 impl fmt::Display for DiscordClientError {
-    fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            DiscordClientError::ClientError => fmt.write_str("Failed to create client"),
-            DiscordClientError::ConfigReadFailure => fmt.write_str("Failed to read config file"),
-            DiscordClientError::ConfigParseFailure => fmt.write_str("Failed to parse config file"),
-            DiscordClientError::EnvError => fmt.write_str("Failed to read .env file"),
-        }
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str("App start error")
     }
 }
+
+impl error_stack::Context for DiscordClientError {}
 
 #[derive(Deserialize, Debug)]
 pub struct Config {
@@ -94,10 +85,13 @@ impl EventHandler for Handler {
 
 #[tokio::main]
 async fn main() -> Result<(), DiscordClientError> {
-    let file = File::open("./config.json").map_err(|_| DiscordClientError::ConfigReadFailure)?;
+    let file = File::open("./config.json")
+        .attach_printable("Failed to open config.json")
+        .change_context(DiscordClientError)?;
     let reader = BufReader::new(file);
-    let cfg: Config =
-        serde_json::from_reader(reader).map_err(|_| DiscordClientError::ConfigParseFailure)?;
+    let cfg: Config = serde_json::from_reader(reader)
+        .attach_printable("Failed to serialize config (Is it valid?).")
+        .change_context(DiscordClientError)?;
 
     let token = cfg.token.clone();
 
@@ -108,7 +102,8 @@ async fn main() -> Result<(), DiscordClientError> {
     let mut client = Client::builder(token, intents)
         .event_handler(handler)
         .await
-        .map_err(|_| DiscordClientError::ClientError)?;
+        .attach_printable("Failed to build client.")
+        .change_context(DiscordClientError)?;
 
     if let Err(why) = client.start().await {
         println!("Client error: {:?}", why);

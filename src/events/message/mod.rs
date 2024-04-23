@@ -54,10 +54,13 @@ pub async fn message(
         .get(0)
         .ok_or(MessageError::FilterError)?;
 
-    let result = get_result::handler(url, msg.content.clone(), group)
+    let result = match get_result::handler(url, msg.content.clone(), group)
         .await
         .map_err(|_| MessageError::FilterError)?
-        .ok_or(MessageError::FilterError)?;
+    {
+        Some(res) => res,
+        None => return Ok(()),
+    };
 
     match result {
         MessageMatchType::Keyword(keyword) => {
